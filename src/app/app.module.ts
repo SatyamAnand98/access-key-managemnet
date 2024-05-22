@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from 'src/admin/admin.module';
 import { DatabaseModule } from 'src/store/Database/mongoDb.module';
 import { AuthModule } from '../auth/auth.module';
