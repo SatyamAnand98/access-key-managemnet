@@ -11,14 +11,14 @@ import { AppService } from './app.service';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 10 * 1000,
-          limit: 20,
-        },
-      ],
-    }),
+    // ThrottlerModule.forRoot({
+    //   throttlers: [
+    //     {
+    //       ttl: 10 * 1000,
+    //       limit: 20,
+    //     },
+    //   ],
+    // }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.development.env'],
@@ -33,10 +33,10 @@ import { AppService } from './app.service';
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: ThrottlerGuard,
+    // },
   ],
 })
 export class AppModule {}
