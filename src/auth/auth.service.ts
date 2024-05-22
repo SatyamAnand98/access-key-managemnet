@@ -20,7 +20,9 @@ export class AuthService {
   ): Promise<{ access_token: string }> {
     const user = await this.userModel.findOne({ username });
     if (!user || user.password !== pass) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException(
+        'Failed to Login. Please check username and password',
+      );
     }
     const payload = {
       sub: user.id,

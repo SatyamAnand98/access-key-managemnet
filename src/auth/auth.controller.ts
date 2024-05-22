@@ -7,12 +7,11 @@ import {
   Post,
   Query,
   Request,
-  UseGuards,
 } from '@nestjs/common';
-import { AuthGuard } from './auth.guard';
-import { AuthService } from './auth.service';
-import { Public } from '../store/constants';
 import { CreateUserDto, LoginUserDto } from 'src/store/DTO/user.dto';
+import { Public } from '../store/constants';
+import { AuthService } from './auth.service';
+import { IResponse } from 'src/store/interfaces/response.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -21,20 +20,47 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Public()
   @Get('login')
-  signIn(@Query() signInDto: LoginUserDto) {
-    return this.authService.signIn(signInDto.username, signInDto.password);
+  async signIn(@Query() signInDto: LoginUserDto): Promise<IResponse> {
+    const responseObj: IResponse = {
+      data: await this.authService.signIn(
+        signInDto.username,
+        signInDto.password,
+      ),
+      message: 'User logged in successfully',
+      metadata: {
+        error: false,
+      },
+    };
+
+    return responseObj;
   }
 
   @HttpCode(HttpStatus.CREATED)
   @Public()
   @Post('register')
-  signUp(@Body() signUpDto: CreateUserDto) {
-    return this.authService.signUp(signUpDto);
+  async signUp(@Body() signUpDto: CreateUserDto): Promise<IResponse> {
+    const responseObj: IResponse = {
+      data: await this.authService.signUp(signUpDto),
+      message: 'User registered successfully',
+      metadata: {
+        error: false,
+      },
+    };
+
+    return responseObj;
   }
 
-  @UseGuards(AuthGuard)
   @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
+  getProfile(@Request() req: Request): IResponse {
+    console.log(req['user']);
+    const responseObj: IResponse = {
+      data: req['user'],
+      message: 'User profile fetched successfully',
+      metadata: {
+        error: false,
+      },
+    };
+
+    return responseObj;
   }
 }

@@ -24,7 +24,7 @@ export class AdminService {
     private readonly pubSub: ProducerService,
   ) {}
 
-  async updateAccess(updateUser: UpdateUserDto): Promise<any> {
+  async updateAccess(updateUser: UpdateUserDto): Promise<Object> {
     const user = await this.userRepository.findOneAndUpdate(
       {
         username: updateUser.username,
@@ -54,7 +54,7 @@ export class AdminService {
     }
   }
 
-  async createKey(createKeyDto: CreateKeyDto, req: any): Promise<any> {
+  async createKey(createKeyDto: CreateKeyDto, req: any): Promise<Object> {
     const { accessLevel, rateLimit, expiresIn } = createKeyDto;
 
     const user = req['user'];
@@ -102,7 +102,7 @@ export class AdminService {
     id: string,
     updateKeyDto: UpdateKeyDto,
     req: any,
-  ): Promise<any> {
+  ): Promise<Object> {
     const user = req['user'];
 
     const existingKey = await this.accessRepository.findOne({
@@ -152,7 +152,7 @@ export class AdminService {
     }
   }
 
-  async deleteKey(id: string, req: any): Promise<any> {
+  async deleteKey(id: string, req: any): Promise<Object> {
     const user = req['user'];
 
     const keyInfo = await this.accessRepository.findOne({
@@ -181,7 +181,7 @@ export class AdminService {
     }
   }
 
-  async listKeys(req: any): Promise<any> {
+  async listKeys(req: any): Promise<Array<Object>> {
     const user = req['user'];
 
     const keys = await this.accessRepository.find({
