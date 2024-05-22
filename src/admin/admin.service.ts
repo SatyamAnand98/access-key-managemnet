@@ -2,13 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import mongoose, { Model } from 'mongoose';
 import { AuthService } from 'src/auth/auth.service';
-import { UpdateUserDto } from '../store/DTO/user.dto';
-import { User } from '../store/Schema/user.entity';
-import { JwtGenerationService } from '../store/utils/jwt.service';
+import { ProducerService } from 'src/pub-sub/tokenEvents.handler';
+import { CreateKeyDto, UpdateKeyDto } from 'src/store/DTO/key.dto';
 import { AccessToken } from 'src/store/Schema/token.entity';
 import { EDbNames } from 'src/store/enums/dbNames';
-import { CreateKeyDto, UpdateKeyDto } from 'src/store/DTO/key.dto';
+import { UpdateUserDto } from '../store/DTO/user.dto';
+import { User } from '../store/Schema/user.entity';
 import { calcExpiry } from '../store/utils/expiry.calc';
+import { JwtGenerationService } from '../store/utils/jwt.service';
+import { IEvent } from 'src/store/interfaces/events.interface';
+import { EEvents } from 'src/store/enums/events.enum';
 
 @Injectable()
 export class AdminService {
@@ -18,6 +21,7 @@ export class AdminService {
     @InjectModel(EDbNames.ACCESS_TOKEN)
     private accessRepository: Model<AccessToken>,
     private readonly authService: AuthService,
+    private readonly pubSub: ProducerService,
   ) {}
 
   async updateAccess(updateUser: UpdateUserDto): Promise<any> {
@@ -78,6 +82,19 @@ export class AdminService {
       expiresAt: calcExpiry(new Date(), expiresIn.toString()),
     }).save();
 
+    const tokenInfo: IEvent = {
+      role: accessLevel,
+      username: user.username,
+      token: newKey,
+      rateLimiter: rateLimit,
+      iat: new Date(),
+      exp: calcExpiry(new Date(), expiresIn.toString()),
+      eventType: EEvents.CREATE_KEY,
+      isActive: true,
+    };
+
+    this.pubSub.publishToken(JSON.stringify(tokenInfo));
+
     return { ...newKeyObj['_doc'] };
   }
 
@@ -98,21 +115,35 @@ export class AdminService {
       throw new Error('Key does not exist');
     }
 
-    existingKey.role = updateKeyDto.accessLevel;
-    existingKey.rateLimiter = updateKeyDto.rateLimit;
-    existingKey.expiresIn = updateKeyDto.expiresIn.toString();
-    existingKey.isActive = updateKeyDto.isActive;
-    existingKey.isDeleted = updateKeyDto.isDeleted
-      ? updateKeyDto.isDeleted
-      : false;
-    existingKey.expiresAt = calcExpiry(
-      new Date((existingKey as any).createdAt),
-      updateKeyDto.expiresIn.toString(),
-    );
+    existingKey.role = updateKeyDto.accessLevel ?? existingKey.role;
+    existingKey.rateLimiter = updateKeyDto.rateLimit ?? existingKey.rateLimiter;
+    existingKey.expiresIn =
+      updateKeyDto.expiresIn.toString() ?? existingKey.expiresIn;
+    existingKey.isActive = updateKeyDto.isActive ?? existingKey.isActive;
+    existingKey.isDeleted = updateKeyDto.isDeleted ?? existingKey.isDeleted;
+    existingKey.expiresAt = updateKeyDto.expiresIn
+      ? calcExpiry(
+          new Date((existingKey as any).createdAt),
+          updateKeyDto.expiresIn.toString(),
+        )
+      : existingKey.expiresAt;
 
     existingKey.save();
 
     if (existingKey) {
+      const tokenInfo: IEvent = {
+        role: updateKeyDto.accessLevel,
+        username: user.username,
+        token: existingKey.token,
+        rateLimiter: existingKey.rateLimiter,
+        iat: existingKey['_doc']['createdAt'],
+        exp: existingKey.expiresAt,
+        eventType: EEvents.UPDATE_KEY,
+        isActive: existingKey.isActive,
+      };
+
+      this.pubSub.publishToken(JSON.stringify(tokenInfo));
+
       return {
         ...existingKey['_doc'],
       };
@@ -124,22 +155,24 @@ export class AdminService {
   async deleteKey(id: string, req: any): Promise<any> {
     const user = req['user'];
 
-    const deletedKey = await this.accessRepository.findOneAndUpdate(
-      {
-        _id: new mongoose.Types.ObjectId(id),
-        username: user.username,
-        isDeleted: false,
-      },
-      {
-        $set: {
-          isDeleted: true,
-          isActive: false,
-        },
-      },
-      { new: true },
-    );
+    const keyInfo = await this.accessRepository.findOne({
+      _id: new mongoose.Types.ObjectId(id),
+      username: user.username,
+      isDeleted: false,
+    });
 
-    if (deletedKey) {
+    if (keyInfo) {
+      keyInfo.isDeleted = true;
+      keyInfo.isActive = false;
+
+      keyInfo.save();
+      const tokenInfo: IEvent = {
+        token: keyInfo.token,
+        eventType: EEvents.DELETE_KEY,
+      };
+
+      this.pubSub.publishToken(JSON.stringify(tokenInfo));
+
       return {
         message: 'Key Successfully Deleted',
       };

@@ -1,0 +1,5 @@
+export enum EEvents {
+  CREATE_KEY = 'CREATE_KEY',
+  UPDATE_KEY = 'UPDATE_KEY',
+  DELETE_KEY = 'DELETE_KEY',
+}

@@ -1,32 +1,3 @@
-// import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-
-// @Entity()
-// export class AccessToken {
-//   @PrimaryGeneratedColumn()
-//   id: number;
-
-//   @Column({ type: 'number', foreignKeyConstraintName: id })
-//   userId: string;
-
-//   @Column({ type: 'varchar' })
-//   token: string;
-
-//   @Column()
-//   accessLevel: string;
-
-//   @Column({ default: 0 })
-//   rateLimiter: number;
-
-//   @Column()
-//   expiry: Date;
-
-//   @Column({ default: false })
-//   isDeleted: boolean;
-
-//   @Column({ default: Date.now })
-//   issuedAt: Date;
-// }
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { ERole } from '../enums/role.enum';
