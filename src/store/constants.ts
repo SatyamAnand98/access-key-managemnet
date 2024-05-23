@@ -10,3 +10,7 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 export const accessTokenConstant = {
   secret: 'SECRET KEY FOR ACCESS TOKEN',
 };
+
+export const PASSWORD_ENCRYPTION = {
+  SALT_ROTATION: 12,
+};

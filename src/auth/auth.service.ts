@@ -5,6 +5,8 @@ import { User } from 'src/store/Schema/user.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { EDbNames } from 'src/store/enums/dbNames';
+import * as bcrypt from 'bcrypt';
+import { PASSWORD_ENCRYPTION } from 'src/store/constants';
 
 @Injectable()
 export class AuthService {
@@ -14,14 +16,34 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  async hashPassword(plainPassword: string): Promise<string> {
+    const salt = await bcrypt.genSalt(PASSWORD_ENCRYPTION.SALT_ROTATION);
+    const hash = await bcrypt.hash(plainPassword, salt);
+    return hash;
+  }
+
+  async validatePassword(
+    plainPassword: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
+    return await bcrypt.compare(plainPassword, hashedPassword);
+  }
+
   async signIn(
     username: string,
     pass: string,
   ): Promise<{ access_token: string }> {
     const user = await this.userModel.findOne({ username });
-    if (!user || user.password !== pass) {
+
+    if (!user) {
       throw new UnauthorizedException(
-        'Failed to Login. Please check username and password',
+        'Failed to Login. Please check username and try again',
+      );
+    }
+
+    if (!(await this.validatePassword(pass, user.password))) {
+      throw new UnauthorizedException(
+        'Failed to Login. Please check password and try again',
       );
     }
     const payload = {
@@ -40,7 +62,7 @@ export class AuthService {
   ): Promise<{ access_token: string }> {
     const user = new this.userModel({
       username: signUpDto.username,
-      password: signUpDto.password,
+      password: await this.hashPassword(signUpDto.password),
       isActive: signUpDto.isActive,
       accessLevel: signUpDto.accessLevel,
     });
