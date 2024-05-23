@@ -52,6 +52,10 @@ import { AllExceptionsFilter } from 'src/store/middlewares/http-exception.filter
     // },
   ],
 })
+/**
+ * Configures the module's middleware consumer.
+ * @param consumer - The middleware consumer.
+ */
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer

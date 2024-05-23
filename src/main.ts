@@ -15,26 +15,41 @@ ConfigModule.forRoot({
 
 /**
  * Creates a NestJs server
- * @returns void
+ * Bootstraps the application.
+ *
+ * @returns {Promise<void>} A promise that resolves when the application is successfully bootstrapped.
  */
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { cors: true });
   const logger = new Logger('token-info');
   const reflector = app.get(Reflector);
   const jwtService = app.get(JwtService);
+
+  /**
+   * using AuthGuard to authenticate each request in useGlobalGuards
+   */
   app.useGlobalGuards(new AuthGuard(jwtService, reflector));
+  /**
+   * using AllExceptionsFilter to handle all exceptions
+   */
   app.useGlobalFilters(new AllExceptionsFilter(logger));
 
+  /**
+   * Logging all unhandled rejection
+   */
   process.on('unhandledRejection', (reason, promise) => {
     logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   });
 
+  /**
+   * Logging all uncaught exception
+   */
   process.on('uncaughtException', (error) => {
     logger.error('Uncaught Exception:', error);
   });
 
-  // app.use(csurf()); // Cross-site request forgery (also known as CSRF or XSRF) is a type of malicious exploit of a website where unauthorized commands are transmitted from a user that the web application trusts. To mitigate this kind of attack you can use the csurf package.
-  // app.use(helmet());
+  app.use(csurf()); // Cross-site request forgery (also known as CSRF or XSRF) is a type of malicious exploit of a website where unauthorized commands are transmitted from a user that the web application trusts. To mitigate this kind of attack you can use the csurf package.
+  app.use(helmet());
 
   /**
    * Creates Swagger for the services with below details:
